@@ -1,0 +1,172 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script>
+	window.$ = window.jQuery = WLJQ;
+</script>
+<title>SpellerApp</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script src="jquery.mobile-1.3.0.js"></script>
+<link href="css/jquery.mobile.structure-1.3.0.css" rel="stylesheet">
+<link href="css/jquery.mobile.theme-1.3.0.css" rel="stylesheet">
+<link href="css/jquery.mobile-1.3.0.css" rel="stylesheet">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
+<link rel="stylesheet" href="css/SpellerApp.css">
+<script type="text/javascript">
+	/*var wordList = ['mournful', 'horticulture','duple','disease','impetuous','insurmountable','forestall','congeal','guitar','fortification','marinate','referendum','percolate','animosity','invertebrate','atrium','posterity','incorruptible','centralization','percussion','abdomen','summability','palette','innate','sternum','oxygen','erosion','futurity','dribble','consecrate','stallion','companion','extinction','abdicate','renounce','perishable','starvation',
+		'ammunition','bible','fortification','dominion','dozen','sternum','electrochemical','bicarmel','paralegal','geranium','goal','thermal','piecemeal','toploftical','shoal','spinal','jovial','dismal','immortal','stalemate'];
+	//getWordList();
+	*/
+	var wordList;
+	var index = 0;
+	$('[data-role=page]').live('pagebeforeshow', function (event, ui) {
+		if (this.id == "beginner") {
+			getWordList();
+				
+		}
+	});
+	
+	function getWordList(){
+		console.log('invoke adapater');
+		var invocationData = { adapter:"BeginnerWordListAdapter",procedure:"getBeginnerList",parameters:[]};
+		var options = {
+			onSuccess:displaySuccess,
+			onFailure:displayError
+		};
+		WL.Logger.debug("About to invoke BeginerWordListAdapter");	
+		WL.Client.invokeProcedure(invocationData, options);
+		
+
+	}
+	
+	function displayError(){
+		console.log('Error');
+	}
+	
+	function displaySuccess(response){
+		if(response.invocationResult.isSuccessful){
+			console.dir(response.invocationResult);
+			wordList = response.invocationResult.words;
+			loadWord();	
+		}
+	}
+	
+	function loadWord(){
+		WL.Logger.debug('in loadWord');
+		nextWord = wordList[index++];
+		index = (index == wordList.length) ? 0 : index
+		$('#spellword').val(nextWord);
+		var audioFile = $('#word-sound').attr('src', 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+nextWord+'.mp3');
+		try{
+			WL.Logger.debug('loading ' + 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+nextWord+'.mp3');
+			audioFile.load();
+			audioFile.play();
+		}catch(e){
+			//alert('error loading ' + nextWord + '\n ' + e);
+			
+		}
+		$('#status').hide();
+		$('#next').hide();
+		$('input#spelt').focus();
+		$('#check').show();
+		$('#check').data('icon', 'minus'); 
+		$('#check .ui-btn-text').text('Check');
+		//$('#word-sound').load();
+		//$('#word-sound').play();
+	}
+	
+	function checkSpelling() { 
+		if ($('#spelt').val().trim().toLowerCase() === $('#spellword').val()){
+			$('#status').removeClass('redStatus').addClass('greenStatus')
+				.text('Great Job !! ' + $('#spellword').val().toUpperCase() + ' spelled right.' )
+				.show();
+			//$('#check .ui-icon').addClass('ui-icon-check').removeClass('ui-icon-delete').removeClass('ui-icon-minus'); 
+			//$('#check').data('icon', 'check'); 
+			//$('#check .ui-btn-text').text('Try another');
+			$('#next').show();
+			$('#check').hide();
+			$('#spelt').val('');
+		}else{
+			$('#spelt').val('');
+			$('#check').data('icon', 'delete');
+			$('#status').removeClass('greenStatus').addClass('redStatus')
+				.text('Incorrect !!  Try again.' ).show();
+			//$('#check .ui-icon').addClass('ui-icon-delete').removeClass('ui-icon-check').removeClass('ui-icon-minus'); 			
+			//$('#check .ui-btn-text').text('Incorrect ! Retry');
+			//$('#status').text('Incorrect !!  Try again.) );
+		}
+		return false;
+	}
+	
+	function playSound(){
+		document.getElementById('word-sound').play();
+		$('input#spelt').focus();
+		return false;
+	}
+
+</script>
+</head>
+<body onload="WL.Client.init({connectOnStartup : false})" id="content" style="display: none;">
+	<div data-role="page" id="main"  data-theme="b" data-content-theme="b">
+		<div data-role="header">
+			<h1>Spelling Bee Home</h1>
+		</div>
+		<div data-role="content" style="padding: 15px">
+			<p>Welcome to spelling practice application. Select a level
+				first.</p>
+			<ul data-role="listview" id="listview" data-inset="true" data-theme="c">
+				<li data-role="list-divider" id="divider">Select Level</li>
+				<li id="beginneritem"><a href="#beginner">Beginner</a></li>
+				<li id="intermediateitem"><a href="#">Intermediate</a></li>
+				<li id="advanceditem"><a href="#">Advanced</a></li>
+			</ul>
+		</div>
+		<div data-role="footer" id="footer">
+			<h2>App for Rishi</h2>
+		</div>
+	</div>
+	
+	<div data-role="page" id="beginner" data-theme="b" data-content-theme="b">
+		<div data-role="header" id="header" data-position="fixed">
+			<a href="#main" data-rel="back" data-icon="home">Home</a>
+			<h3>Beginner</h3>
+		</div>
+		<div data-role="content" style="padding: 15px">
+			<p> Listen to the word pronunciation first and then spell it. 
+			Click on 'Check' button to check the spelling. Click on speaker icon to replay the word.</p>
+			<div data-role="fieldcontain" id="fieldcontain">
+				<label for="text">Pronounce word:</label> 
+				<audio 
+					oncanplaythrough="playSound()"
+					controls id="word-sound" style="display:none" >
+					<source id="soundlink" type="audio/mpeg"/>
+					<a href="#" onclick="playSound()" data-ajax="false"> Play </a>
+				</audio>
+				<img src="images/sound_32.png" onclick="playSound()" title="replay word" /> 
+			</div>
+			<div data-role="fieldcontain" id="fieldcontain">
+				<label for="text">Spell word:</label> 
+				<input type="hidden" name="spellword" id="spellword" value="exaggerate"/> 
+				<input type="text" name="spelt" id="spelt" placeholder="enter spelling" focus/>				
+			</div>
+			<div id="status">
+			
+			</div>
+			<div >
+			<a id="check" href="javascript:checkSpelling()" data-role="button" data-icon="minus"  >Check</a>
+			<a id="next" href="javascript:loadWord()" data-role="button" data-icon="check"  >Try another</a>
+			</div>
+		</div>
+		<div data-role="footer" id="footer">
+			<h2>App for Rishi</h2>
+		</div>
+	</div>	
+	
+	
+	<!--application UI goes here-->
+	<script src="js/initOptions.js"></script>
+	<script src="js/SpellerApp.js"></script>
+	<script src="js/messages.js"></script>
+</body>
+</html>
