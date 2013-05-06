@@ -93,3 +93,14 @@ function getBeginnerList(){
 	return WL.Server.invokeHttp(input); 
 }
 
+
+function getIntermediateList(){
+	WL.Logger.debug("BeginnerWordListAdapter.getIntermediateList procedure invoked");
+	var input = {
+		method : 'get',
+		returnedContentType : 'json',
+		path : "/apps/services/www/SpellerApp/mobilewebapp/default/json/intermediate.json"
+	};
+	return WL.Server.invokeHttp(input); 
+}
+

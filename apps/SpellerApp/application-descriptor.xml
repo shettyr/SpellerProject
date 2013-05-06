@@ -19,10 +19,13 @@
         <worklightSettings include="true"/>
         <security>
             <encryptWebResources enabled="false"/>
-            <testWebResourcesChecksum enabled="false" ignoreFileExtensions="png, jpg, jpeg, gif, mp4, mp3"/>
+            <testWebResourcesChecksum enabled="false" ignoreFileExtensions="png, jpg, jpeg, gif, mp4, mp3, wav"/>
             <publicSigningKey>Replace this text with the public key of the certificate with which you sign the APK. For details see the Worklight Developer's Reference Guide.</publicSigningKey>
         </security>
     </android>
     <mobileWebApp xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" xsi:type="EnvironmentWithSkinDescriptor"/>
-    <worklightServerRootURL>http://${local.IPAddress}:8080</worklightServerRootURL>
+    <!-- <worklightServerRootURL>http://${local.IPAddress}:8080</worklightServerRootURL> -->
+    <worklightServerRootURL>http://192.168.1.12:8080</worklightServerRootURL>
+    
+    
 </application>

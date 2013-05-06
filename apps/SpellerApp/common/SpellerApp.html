@@ -13,38 +13,57 @@
 <meta name="viewport"
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
 <link rel="stylesheet" href="css/SpellerApp.css">
+
 <script type="text/javascript">
 	/*var wordList = ['mournful', 'horticulture','duple','disease','impetuous','insurmountable','forestall','congeal','guitar','fortification','marinate','referendum','percolate','animosity','invertebrate','atrium','posterity','incorruptible','centralization','percussion','abdomen','summability','palette','innate','sternum','oxygen','erosion','futurity','dribble','consecrate','stallion','companion','extinction','abdicate','renounce','perishable','starvation',
 		'ammunition','bible','fortification','dominion','dozen','sternum','electrochemical','bicarmel','paralegal','geranium','goal','thermal','piecemeal','toploftical','shoal','spinal','jovial','dismal','immortal','stalemate'];
 	//getWordList();
 	*/
 	var wordList;
+	var defList;
+	var currentDefIdx = 0;
 	var index = 0;
+	var level = "beginner";
+	var points = 0, totalPoints = 0;
+	/*
+	$( document ).bind("pagebeforechange", function( event, data ){
+		level = "beginner";
+	});*/
+	/*
 	$('[data-role=page]').live('pagebeforeshow', function (event, ui) {
 		if (this.id == "beginner") {
-			getWordList();
-				
+			getWordList('beginner');				
+		}else if (this.id == "intermediate") {
+			getWordList('intermediate');
 		}
-	});
+	});*/
 	
-	function getWordList(){
-		console.log('invoke adapater');
-		var invocationData = { adapter:"BeginnerWordListAdapter",procedure:"getBeginnerList",parameters:[]};
+	function loadPageWith(level){
+		getWordList(level);
+		$('#headerh3').text(level).css('textTransform', 'capitalize');
+		$.mobile.changePage( "#spellPage", { transition: "slideup"} );
+		$('input#spelt').focus();
+	}
+	
+	function getWordList(level){
+		if (level == null) level = 'beginner';
+		var invocationData = { adapter:"WordListAdapter",procedure:"getWordList",parameters:[level]};
 		var options = {
-			onSuccess:displaySuccess,
-			onFailure:displayError
+			onSuccess:getWordListSuccess,
+			onFailure:getWordListError
 		};
+		index = 0		// reset index 
 		WL.Logger.debug("About to invoke BeginerWordListAdapter");	
 		WL.Client.invokeProcedure(invocationData, options);
-		
-
 	}
 	
-	function displayError(){
-		console.log('Error');
+	function getWordListError(){
+		wordList = ['mournful', 'horticulture','duple','disease','impetuous','insurmountable','forestall','congeal','guitar','fortification','marinate','referendum','percolate','animosity','invertebrate','atrium','posterity','incorruptible','centralization','percussion','abdomen','summability','palette','innate','sternum','oxygen','erosion','futurity','dribble','consecrate','stallion','companion','extinction','abdicate','renounce','perishable','starvation',
+		'ammunition','bible','fortification','dominion','dozen','sternum','electrochemical','bicarmel','paralegal','geranium','goal','thermal','piecemeal','toploftical','shoal','spinal','jovial','dismal','immortal','stalemate'];
+		loadWord();
 	}
 	
-	function displaySuccess(response){
+	function getWordListSuccess(response){
 		if(response.invocationResult.isSuccessful){
 			console.dir(response.invocationResult);
 			wordList = response.invocationResult.words;
@@ -54,12 +73,15 @@
 	
 	function loadWord(){
 		WL.Logger.debug('in loadWord');
+		$('#wordDef').text('');
 		nextWord = wordList[index++];
 		index = (index == wordList.length) ? 0 : index
 		$('#spellword').val(nextWord);
-		var audioFile = $('#word-sound').attr('src', 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+nextWord+'.mp3');
+		
+		var audioFile = $('#wordSound').attr('src', 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+nextWord+'.mp3');
+		//var audioFile = $('#wordSound').attr('src', 'http://media.merriam-webster.com/soundc11/h/heart001.wav');
 		try{
-			WL.Logger.debug('loading ' + 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+nextWord+'.mp3');
+			WL.Logger.debug('loading ' + audioFile);
 			audioFile.load();
 			audioFile.play();
 		}catch(e){
@@ -72,18 +94,80 @@
 		$('#check').show();
 		$('#check').data('icon', 'minus'); 
 		$('#check .ui-btn-text').text('Check');
-		//$('#word-sound').load();
-		//$('#word-sound').play();
+		
+		loadDefinition(nextWord);
+	}
+	
+	function displayDetails(){
+		var newWord = $('#newWord').val();
+		loadDefinition(newWord, getDetailsSuccess);
+		var audioFile = $('#wordSound').attr('src', 'http://ssl.gstatic.com/dictionary/static/sounds/de/0/'+newWord+'.mp3');
+		//var audioFile = $('#wordSound').attr('src', 'http://media.merriam-webster.com/soundc11/h/heart001.wav');
+		try{
+			WL.Logger.debug('loading ' + audioFile);
+			audioFile.load();
+			audioFile.play();
+		}catch(e){
+			//alert('error loading ' + nextWord + '\n ' + e);
+			
+		}
+	}
+	
+	function getDetailsSuccess(response){
+		if(response.invocationResult.isSuccessful){
+			defList = response.invocationResult.definition;
+			currentDefIdx = 0;
+			if (defList.length > 1){
+				$('#nextDefLink1').show();
+			}else{
+				$('#nextDefLink1').hide();
+			}
+			populateDefinition('wordDef1');
+		}
+	}
+	
+	function loadDefinition(word, onSuccess){
+		if (onSuccess == null ) onSuccess = getDefinitionSuccess;
+		var invocationData = { adapter:"WordDefinitionAdapter",procedure:"getDefinition",parameters:[word]};
+		var options = {
+			onSuccess:onSuccess,
+			onFailure:getDefinitionError
+		};
+		WL.Logger.debug("About to invoke WordDefinitionAdapter getDefinition ");	
+		WL.Client.invokeProcedure(invocationData, options);
+	}
+	
+	function getDefinitionSuccess(response){
+		if(response.invocationResult.isSuccessful){
+			console.dir(response.invocationResult);
+			defList = response.invocationResult.definition;
+			currentDefIdx = 0;
+			if (defList.length > 1){
+				$('#nextDefLink').show();
+			}else{
+				$('#nextDefLink').hide();
+			}
+			populateDefinition('wordDef');
+		}
+	}
+	
+	function populateDefinition(item){
+		if (currentDefIdx >= defList.length ) currentDefIdx = 0;
+		$('#'+item).text(defList[currentDefIdx++]);
+	}
+	
+	
+	function getDefinitionError(response){
+		console.log('Error getting word definition');
 	}
 	
 	function checkSpelling() { 
 		if ($('#spelt').val().trim().toLowerCase() === $('#spellword').val()){
+			earnPoints();
 			$('#status').removeClass('redStatus').addClass('greenStatus')
 				.text('Great Job !! ' + $('#spellword').val().toUpperCase() + ' spelled right.' )
 				.show();
-			//$('#check .ui-icon').addClass('ui-icon-check').removeClass('ui-icon-delete').removeClass('ui-icon-minus'); 
-			//$('#check').data('icon', 'check'); 
-			//$('#check .ui-btn-text').text('Try another');
+			
 			$('#next').show();
 			$('#check').hide();
 			$('#spelt').val('');
@@ -92,15 +176,20 @@
 			$('#check').data('icon', 'delete');
 			$('#status').removeClass('greenStatus').addClass('redStatus')
 				.text('Incorrect !!  Try again.' ).show();
-			//$('#check .ui-icon').addClass('ui-icon-delete').removeClass('ui-icon-check').removeClass('ui-icon-minus'); 			
-			//$('#check .ui-btn-text').text('Incorrect ! Retry');
-			//$('#status').text('Incorrect !!  Try again.) );
+			$('input#spelt').focus();
 		}
 		return false;
 	}
 	
+	function earnPoints(){
+		if (level == 'beginner') points = 10;
+		if (level == 'intermediate') points = 20;
+		if (level == 'advanced') points = 30;
+		totalPoints += points;
+	}
+	
 	function playSound(){
-		document.getElementById('word-sound').play();
+		document.getElementById('wordSound').play();
 		$('input#spelt').focus();
 		return false;
 	}
@@ -116,10 +205,13 @@
 			<p>Welcome to spelling practice application. Select a level
 				first.</p>
 			<ul data-role="listview" id="listview" data-inset="true" data-theme="c">
-				<li data-role="list-divider" id="divider">Select Level</li>
-				<li id="beginneritem"><a href="#beginner">Beginner</a></li>
-				<li id="intermediateitem"><a href="#">Intermediate</a></li>
-				<li id="advanceditem"><a href="#">Advanced</a></li>
+				<li data-role="list-divider">Learn</li>
+				<li id="checkitem"><a href="#defineWord">Definition</a></li>
+				<li data-role="list-divider">Practice - Select Level</li>
+				<li id="beginneritem"><a href="javascript:loadPageWith('beginner')">Beginner</a></li>
+				<li id="intermediateitem"><a href="javascript:loadPageWith('intermediate')">Intermediate</a></li>
+				<li id="advanceditem"><a href="javascript:loadPageWith('advanced')">Advanced</a></li>
+				
 			</ul>
 		</div>
 		<div data-role="footer" id="footer">
@@ -127,27 +219,31 @@
 		</div>
 	</div>
 	
-	<div data-role="page" id="beginner" data-theme="b" data-content-theme="b">
+	<div data-role="page" id="spellPage" data-theme="b" data-content-theme="b">
 		<div data-role="header" id="header" data-position="fixed">
 			<a href="#main" data-rel="back" data-icon="home">Home</a>
-			<h3>Beginner</h3>
+			<h3 id="headerh3">Beginner</h3>
 		</div>
 		<div data-role="content" style="padding: 15px">
 			<p> Listen to the word pronunciation first and then spell it. 
 			Click on 'Check' button to check the spelling. Click on speaker icon to replay the word.</p>
-			<div data-role="fieldcontain" id="fieldcontain">
-				<label for="text">Pronounce word:</label> 
-				<audio 
+			<div data-role="fieldcontain" id="pronunceField">
+				<label for="audio">Pronounce word:</label> 
+				<audio id="audio"
 					oncanplaythrough="playSound()"
-					controls id="word-sound" style="display:none" >
+					controls id="wordSound" style="display:none" >
 					<source id="soundlink" type="audio/mpeg"/>
 					<a href="#" onclick="playSound()" data-ajax="false"> Play </a>
 				</audio>
 				<img src="images/sound_32.png" onclick="playSound()" title="replay word" /> 
 			</div>
-			<div data-role="fieldcontain" id="fieldcontain">
-				<label for="text">Spell word:</label> 
-				<input type="hidden" name="spellword" id="spellword" value="exaggerate"/> 
+			<div data-role="fieldcontain" id="DefField">
+				Definition <span id="wordDef">
+				</span>&nbsp;<a id="nextDefLink" href="javascript:populateDefinition('wordDef')" title="alternate definition" class="ui-icon-next" >&nbsp;&nbsp;&nbsp;&nbsp;</a>
+			</div>
+			<div data-role="fieldcontain" id="spellField">
+				<label for="spelt">Spell word:</label> 
+				<input type="hidden" name="spellword" id="spellword" value=""/> 
 				<input type="text" name="spelt" id="spelt" placeholder="enter spelling" focus/>				
 			</div>
 			<div id="status">
@@ -164,6 +260,39 @@
 	</div>	
 	
 	
+	<div data-role="page" id="defineWord" data-theme="b" data-content-theme="b">
+		<div data-role="header" id="header" data-position="fixed">
+			<a href="#main" data-rel="back" data-icon="home">Home</a>
+			<h3 id="headerh3">Definition </h3>
+		</div>
+		<div data-role="content" style="padding: 15px">
+			<p>Word pronunication and definition.</p>
+			<div data-role="fieldcontain" id="pronunceField">
+				<label for="audio">Word pronunication:</label> 
+				<audio id="audio"
+					oncanplaythrough="playSound()"
+					controls id="wordSound" style="display:none" >
+					<source id="soundlink" type="audio/mpeg"/>
+					<a href="#" onclick="playSound()" data-ajax="false"> Play </a>
+				</audio>
+				<img src="images/sound_32.png" onclick="playSound()" title="replay word" /> 
+			</div>
+			<div data-role="fieldcontain" id="DefField">
+				Definition <span id="wordDef1"></span>&nbsp;<a id="nextDefLink1" href="javascript:populateDefinition('wordDef1')" title="alternate definition" class="ui-icon-next" >&nbsp;&nbsp;&nbsp;&nbsp;</a>
+			</div>
+			<div data-role="fieldcontain" >
+				<label for="newWord">Enter word:</label> 
+				<input type="text" name="newWord" id="newWord" placeholder="enter word" focus/>				
+			</div>
+
+			<div >
+			<a href="javascript:displayDetails()" data-role="button" data-icon="minus"  >Submit</a>
+			</div>
+		</div>
+		<div data-role="footer" id="footer">
+			<h2>App for Rishi</h2>
+		</div>
+	</div>	
 	<!--application UI goes here-->
 	<script src="js/initOptions.js"></script>
 	<script src="js/SpellerApp.js"></script>

@@ -19,3 +19,11 @@ a, abbr, address, article, aside, audio, b, blockquote, body, canvas, caption, c
 .greenStatus {
 	color: green;
 }
+
+.ui-icon-next{
+   	background-image: url(images/icons-18-black.png) /*{global-icon-set}*/;
+	background-repeat: no-repeat;
+	background-position: -108px -1px;
+	decoration: none;
+	text-decoration: none;
+}
